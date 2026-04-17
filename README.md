@@ -21,6 +21,7 @@ Todo Swipe Card is a customizable container card for Home Assistant specifically
 - Options to show/hide completed items
 - Delete completed items button with optional confirmation dialog
 - Drag-and-drop reordering (for supported integrations)
+- Configurable initial slide, including opening at the first non-empty todo list
 - Visual editor support
 
 ## Requirements
@@ -91,6 +92,7 @@ This card can be configured using the visual editor or YAML.
 | `clear_search_on_uncheck` | boolean | `false` | Clear search filter when unchecking a completed item |
 | `delete_confirmation` | boolean | `false` | Show confirmation dialog when deleting completed items |
 | `card_spacing` | number | `15` | Space between cards in pixels |
+| `initial_slide` | number/string | `0` | Initial slide to open. Use a zero-based slide index or `first_non_empty` |
 
 
 ### Entity Configuration Options
@@ -116,6 +118,16 @@ entities:
 show_pagination: true
 show_completed: true
 card_spacing: 15
+```
+
+#### Open at the first non-empty list
+```yaml
+type: custom:todo-swipe-card
+initial_slide: first_non_empty
+entities:
+  - entity: todo.shopping_list_ah
+  - entity: todo.shopping_list_jumbo
+  - entity: todo.shopping_list_coop
 ```
 
 #### Advanced Configuration 
