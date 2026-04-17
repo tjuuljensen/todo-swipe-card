@@ -45,6 +45,9 @@ export class TodoSwipeCard extends LitElement {
     this._isAddingItem = false;
     this._pendingToggles = new Map(); // Track recently toggled items to prevent subscription override
 
+    // Initial slide handling
+    this._initialSlideApplied = false;
+
     // Initialize dialog manager
     this.dialogManager = new DialogManager(this);
 
@@ -77,6 +80,7 @@ export class TodoSwipeCard extends LitElement {
     return {
       entities: [],
       card_spacing: 15,
+      initial_slide: 0,
       show_pagination: true,
       show_icons: false,
       show_create: true,
@@ -348,10 +352,20 @@ export class TodoSwipeCard extends LitElement {
       return;
     }
 
-    // Save the old config for comparison
     const oldConfig = this._config;
+    const shouldResetInitialSlide =
+      !oldConfig ||
+      JSON.stringify(oldConfig.entities) !== JSON.stringify(newConfig.entities) ||
+      oldConfig.initial_slide !== newConfig.initial_slide;
+
+    // Save the old config for comparison
     this._config = newConfig;
     this._lastConfig = JSON.parse(JSON.stringify(newConfig));
+
+    if (shouldResetInitialSlide) {
+      this._initialSlideApplied = false;
+      this.currentIndex = 0;
+    }
 
     debugLog('Config after processing:', JSON.stringify(this._config));
 
@@ -376,6 +390,7 @@ export class TodoSwipeCard extends LitElement {
             // Apply transition properties after rebuild
             this._applyTransitionProperties();
             this._applyDeleteButtonColor();
+            this._maybeApplyInitialSlide();
           });
         }, 300); // Increased debounce time
       } else {
@@ -383,6 +398,7 @@ export class TodoSwipeCard extends LitElement {
         this._updateFromConfig(oldConfig);
         this._applyTransitionProperties();
         this._applyDeleteButtonColor();
+        this._maybeApplyInitialSlide();
       }
     }
   }
@@ -551,6 +567,9 @@ export class TodoSwipeCard extends LitElement {
 
     // Initialize subscriptions through subscription manager
     this.subscriptionManager.initializeSubscriptions(hass, previousHass);
+
+    // Apply initial slide once hass state is available
+    this._maybeApplyInitialSlide();
   }
 
   /**
@@ -574,8 +593,12 @@ export class TodoSwipeCard extends LitElement {
 
       // Small delay to ensure renderRoot is ready
       setTimeout(() => {
-        this._build();
+        this._build().then(() => {
+          this._maybeApplyInitialSlide();
+        });
       }, 0);
+    } else {
+      this._maybeApplyInitialSlide();
     }
   }
 
@@ -585,6 +608,9 @@ export class TodoSwipeCard extends LitElement {
    */
   disconnectedCallback() {
     debugLog('TodoSwipeCard disconnecting - performing cleanup');
+
+    // Re-apply initial slide on next connect/build cycle
+    this._initialSlideApplied = false;
 
     // Clear all timers first to prevent any pending operations
     if (this._configUpdateTimer) {
@@ -737,6 +763,9 @@ export class TodoSwipeCard extends LitElement {
       this.paginationElement = null;
     }
 
+    // Mark as initialized before applying initial slide logic
+    this.initialized = true;
+
     // Initial positioning requires element dimensions, wait for next frame
     requestAnimationFrame(() => {
       if (!this.cardContainer) {
@@ -756,6 +785,9 @@ export class TodoSwipeCard extends LitElement {
       });
 
       this.updateSlider(false); // Update without animation initially
+
+      // Apply configured initial slide once layout dimensions are available
+      this._maybeApplyInitialSlide();
 
       // Setup resize observer only after initial layout
       this._setupResizeObserver();
@@ -783,9 +815,75 @@ export class TodoSwipeCard extends LitElement {
       this._applyTransitionProperties();
     }, 200);
 
-    // Mark as initialized AFTER build completes
-    this.initialized = true;
     debugLog('Regular card build completed.');
+  }
+
+  /**
+   * Resolve the configured initial slide.
+   *
+   * Supported values:
+   *   - number / numeric string: explicit slide index
+   *   - "first_non_empty": first todo entity whose state is > 0
+   *
+   * Note:
+   *   "first_non_empty" uses the todo entity state, which in Home Assistant
+   *   is the number of incomplete items.
+   *
+   * @returns {number} Target slide index
+   * @private
+   */
+  _resolveInitialSlideIndex() {
+    const mode = this._config?.initial_slide;
+
+    if (mode === 'first_non_empty') {
+      const targetIndex = this._config.entities.findIndex((entity) => {
+        const entityId = this._getEntityId(entity);
+        if (!entityId || !this._hass?.states?.[entityId]) return false;
+
+        const count = Number(this._hass.states[entityId].state);
+        return Number.isFinite(count) && count > 0;
+      });
+
+      return targetIndex >= 0 ? targetIndex : 0;
+    }
+
+    if (mode === undefined || mode === null || mode === '') {
+      return 0;
+    }
+
+    const numericMode = Number(mode);
+    if (Number.isInteger(numericMode)) {
+      return numericMode;
+    }
+
+    return 0;
+  }
+
+  /**
+   * Apply the configured initial slide once per config/load cycle.
+   * This avoids snapping back on normal hass updates while still allowing
+   * a deterministic initial position on page load or config changes.
+   *
+   * @private
+   */
+  _maybeApplyInitialSlide() {
+    if (this._initialSlideApplied) return;
+    if (!this.initialized) return;
+    if (!this._hass) return;
+    if (!this.cardContainer || !this.sliderElement) return;
+    if (!Array.isArray(this.cards) || this.cards.length === 0) return;
+    if (!this._hasValidEntities()) return;
+
+    const containerWidth = this.cardContainer.offsetWidth;
+    if (!containerWidth) return;
+
+    const targetIndex = this._resolveInitialSlideIndex();
+    const clampedIndex = Math.max(0, Math.min(targetIndex, this.cards.length - 1));
+
+    this.slideWidth = containerWidth;
+    this.currentIndex = clampedIndex;
+    this.updateSlider(false);
+    this._initialSlideApplied = true;
   }
 
   /**
