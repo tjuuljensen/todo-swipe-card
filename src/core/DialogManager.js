@@ -14,7 +14,7 @@ export class DialogManager {
   constructor(cardInstance) {
     this.cardInstance = cardInstance;
     this.currentDialog = null; // Track current open dialog
-    this.dialogOpenTime = 0;   // Prevent rapid dialog creation
+    this.dialogOpenTime = 0; // Prevent rapid dialog creation
   }
 
   /**
@@ -174,64 +174,135 @@ export class DialogManager {
     dialog.style.setProperty('--mdc-dialog-max-width', 'min(600px, 95vw)');
 
     // ------------------------------------------------------------------------
-    // Theme bridge for native + HA/MDC/Web Awesome form controls in this dialog
+    // Theme bridge for native + HA/MDC/Web Awesome form controls in this dialog.
+    //
+    // Public --todo-swipe-* variables stay user-overridable. Inline styles only
+    // define *-default values, then every consumer reads var(public, default).
     // ------------------------------------------------------------------------
-    dialog.style.setProperty(
+    const inheritedTheme = getComputedStyle(this.cardInstance);
+    const themeValue = (names, fallback) => {
+      for (const name of names) {
+        const value = inheritedTheme.getPropertyValue(name).trim();
+        if (value) {
+          return value;
+        }
+      }
+      return fallback;
+    };
+    const copyPublicThemeValue = (name) => {
+      const value = inheritedTheme.getPropertyValue(name).trim();
+      if (value) {
+        dialog.style.setProperty(name, value);
+      }
+    };
+
+    [
       '--todo-swipe-dialog-surface',
-      'var(--ha-dialog-surface-background, var(--dialog-background-color, var(--card-background-color, var(--primary-background-color, #1c1c1e))))'
-    );
-    dialog.style.setProperty(
       '--todo-swipe-field-background',
-      'var(--ha-color-form-background, var(--input-fill-color, var(--mdc-text-field-fill-color, rgba(255,255,255,0.08))))'
-    );
-    dialog.style.setProperty(
+      '--todo-swipe-field-background-hover',
+      '--todo-swipe-field-background-disabled',
       '--todo-swipe-field-text',
-      'var(--ha-color-text-primary, var(--primary-text-color, #fff))'
-    );
-    dialog.style.setProperty(
       '--todo-swipe-field-label',
-      'var(--ha-color-text-secondary, var(--secondary-text-color, rgba(255,255,255,0.7)))'
-    );
-    dialog.style.setProperty(
       '--todo-swipe-field-border',
-      'var(--ha-color-border-neutral-loud, var(--divider-color, rgba(255,255,255,0.2)))'
+      '--todo-swipe-field-accent'
+    ].forEach(copyPublicThemeValue);
+
+    const dialogSurface =
+      'var(--todo-swipe-dialog-surface, var(--todo-swipe-dialog-surface-default))';
+    const fieldBackground =
+      'var(--todo-swipe-field-background, var(--todo-swipe-field-background-default))';
+    const fieldBackgroundHover =
+      'var(--todo-swipe-field-background-hover, var(--todo-swipe-field-background-hover-default))';
+    const fieldBackgroundDisabled =
+      'var(--todo-swipe-field-background-disabled, var(--todo-swipe-field-background-disabled-default))';
+    const fieldText = 'var(--todo-swipe-field-text, var(--todo-swipe-field-text-default))';
+    const fieldLabel = 'var(--todo-swipe-field-label, var(--todo-swipe-field-label-default))';
+    const fieldBorder = 'var(--todo-swipe-field-border, var(--todo-swipe-field-border-default))';
+    const fieldAccent = 'var(--todo-swipe-field-accent, var(--todo-swipe-field-accent-default))';
+
+    dialog.style.setProperty(
+      '--todo-swipe-dialog-surface-default',
+      themeValue(
+        [
+          '--ha-dialog-surface-background',
+          '--dialog-background-color',
+          '--card-background-color',
+          '--primary-background-color'
+        ],
+        '#1c1c1e'
+      )
     );
     dialog.style.setProperty(
-      '--todo-swipe-field-accent',
-      'var(--accent-color, var(--primary-color, #ff9f09))'
+      '--todo-swipe-field-background-default',
+      themeValue(
+        ['--ha-color-form-background', '--input-fill-color', '--mdc-text-field-fill-color'],
+        'rgba(255,255,255,0.08)'
+      )
+    );
+    dialog.style.setProperty(
+      '--todo-swipe-field-background-hover-default',
+      themeValue(['--ha-color-form-background-hover'], fieldBackground)
+    );
+    dialog.style.setProperty(
+      '--todo-swipe-field-background-disabled-default',
+      themeValue(
+        ['--ha-color-form-background-disabled', '--input-disabled-fill-color'],
+        fieldBackground
+      )
+    );
+    dialog.style.setProperty(
+      '--todo-swipe-field-text-default',
+      themeValue(['--ha-color-text-primary', '--primary-text-color'], '#fff')
+    );
+    dialog.style.setProperty(
+      '--todo-swipe-field-label-default',
+      themeValue(['--ha-color-text-secondary', '--secondary-text-color'], 'rgba(255,255,255,0.7)')
+    );
+    dialog.style.setProperty(
+      '--todo-swipe-field-border-default',
+      themeValue(['--ha-color-border-neutral-loud', '--divider-color'], 'rgba(255,255,255,0.2)')
+    );
+    dialog.style.setProperty(
+      '--todo-swipe-field-accent-default',
+      themeValue(['--accent-color', '--primary-color'], '#ff9f09')
     );
 
     // Feed the dialog surface itself
-    dialog.style.setProperty('--ha-dialog-surface-background', 'var(--todo-swipe-dialog-surface)');
-    dialog.style.setProperty('--mdc-dialog-surface-color', 'var(--todo-swipe-dialog-surface)');
+    dialog.style.setProperty('--ha-dialog-surface-background', dialogSurface);
+    dialog.style.setProperty('--mdc-dialog-surface-color', dialogSurface);
+
+    // Feed modern HA semantic form vars
+    dialog.style.setProperty('--ha-color-form-background', fieldBackground);
+    dialog.style.setProperty('--ha-color-form-background-hover', fieldBackgroundHover);
+    dialog.style.setProperty('--ha-color-form-background-disabled', fieldBackgroundDisabled);
+    dialog.style.setProperty('--ha-color-text-primary', fieldText);
+    dialog.style.setProperty('--ha-color-text-secondary', fieldLabel);
 
     // Feed legacy HA input vars
-    dialog.style.setProperty('--input-fill-color', 'var(--todo-swipe-field-background)');
-    dialog.style.setProperty('--input-disabled-fill-color', 'var(--todo-swipe-field-background)');
-    dialog.style.setProperty('--input-ink-color', 'var(--todo-swipe-field-text)');
-    dialog.style.setProperty('--input-label-ink-color', 'var(--todo-swipe-field-label)');
+    dialog.style.setProperty('--input-fill-color', fieldBackground);
+    dialog.style.setProperty('--input-disabled-fill-color', fieldBackgroundDisabled);
+    dialog.style.setProperty('--input-ink-color', fieldText);
+    dialog.style.setProperty('--input-label-ink-color', fieldLabel);
     dialog.style.setProperty(
       '--input-disabled-ink-color',
       'var(--disabled-text-color, rgba(255,255,255,0.38))'
     );
-    dialog.style.setProperty('--input-idle-line-color', 'var(--todo-swipe-field-border)');
-    dialog.style.setProperty('--input-hover-line-color', 'var(--todo-swipe-field-accent)');
-    dialog.style.setProperty('--input-dropdown-icon-color', 'var(--todo-swipe-field-text)');
+    dialog.style.setProperty('--input-idle-line-color', fieldBorder);
+    dialog.style.setProperty('--input-hover-line-color', fieldAccent);
+    dialog.style.setProperty('--input-dropdown-icon-color', fieldText);
 
     // Feed MDC vars used by ha-textfield / older controls
-    dialog.style.setProperty('--mdc-text-field-fill-color', 'var(--todo-swipe-field-background)');
-    dialog.style.setProperty(
-      '--mdc-text-field-disabled-fill-color',
-      'var(--todo-swipe-field-background)'
-    );
-    dialog.style.setProperty('--mdc-text-field-ink-color', 'var(--todo-swipe-field-text)');
-    dialog.style.setProperty('--mdc-text-field-label-ink-color', 'var(--todo-swipe-field-label)');
-    dialog.style.setProperty('--mdc-text-field-idle-line-color', 'var(--todo-swipe-field-border)');
-    dialog.style.setProperty('--mdc-text-field-hover-line-color', 'var(--todo-swipe-field-accent)');
-    dialog.style.setProperty('--mdc-select-fill-color', 'var(--todo-swipe-field-background)');
-    dialog.style.setProperty('--mdc-select-disabled-fill-color', 'var(--todo-swipe-field-background)');
-    dialog.style.setProperty('--mdc-select-ink-color', 'var(--todo-swipe-field-text)');
-    dialog.style.setProperty('--mdc-select-label-ink-color', 'var(--todo-swipe-field-label)');
+    dialog.style.setProperty('--mdc-text-field-fill-color', fieldBackground);
+    dialog.style.setProperty('--mdc-text-field-hover-fill-color', fieldBackgroundHover);
+    dialog.style.setProperty('--mdc-text-field-disabled-fill-color', fieldBackgroundDisabled);
+    dialog.style.setProperty('--mdc-text-field-ink-color', fieldText);
+    dialog.style.setProperty('--mdc-text-field-label-ink-color', fieldLabel);
+    dialog.style.setProperty('--mdc-text-field-idle-line-color', fieldBorder);
+    dialog.style.setProperty('--mdc-text-field-hover-line-color', fieldAccent);
+    dialog.style.setProperty('--mdc-select-fill-color', fieldBackground);
+    dialog.style.setProperty('--mdc-select-disabled-fill-color', fieldBackgroundDisabled);
+    dialog.style.setProperty('--mdc-select-ink-color', fieldText);
+    dialog.style.setProperty('--mdc-select-label-ink-color', fieldLabel);
 
     // ------------------------------------------------------------------------
 
@@ -256,7 +327,8 @@ export class DialogManager {
     const entityState = this._hass?.states?.[entityId];
     const supportsDescription = entityState && entitySupportsFeature(entityState, 64);
     const supportsDueDate =
-      entityState && (entitySupportsFeature(entityState, 16) || entitySupportsFeature(entityState, 32));
+      entityState &&
+      (entitySupportsFeature(entityState, 16) || entitySupportsFeature(entityState, 32));
     const supportsDelete = entityState && entitySupportsFeature(entityState, 2);
 
     // Debug the feature support
@@ -310,7 +382,7 @@ export class DialogManager {
       label.style.cssText = `
         display: block;
         font-size: 12px;
-        color: var(--todo-swipe-field-label);
+        color: ${fieldLabel};
         margin-bottom: 4px;
       `;
 
@@ -324,10 +396,10 @@ export class DialogManager {
         max-height: 200px;
         padding: 8px;
         border: none;
-        border-bottom: 1px solid var(--todo-swipe-field-border);
+        border-bottom: 1px solid ${fieldBorder};
         border-radius: 4px 4px 0 0;
-        background: var(--todo-swipe-field-background);
-        color: var(--todo-swipe-field-text);
+        background: ${fieldBackground};
+        color: ${fieldText};
         font-family: var(--mdc-typography-body1-font-family, inherit);
         font-size: var(--mdc-typography-body1-font-size, 1rem);
         line-height: 1.5;
@@ -339,12 +411,12 @@ export class DialogManager {
 
       // Focus styling
       descriptionField.addEventListener('focus', () => {
-        descriptionField.style.borderBottomColor = 'var(--todo-swipe-field-accent)';
+        descriptionField.style.borderBottomColor = fieldAccent;
         descriptionField.style.borderBottomWidth = '2px';
       });
 
       descriptionField.addEventListener('blur', () => {
-        descriptionField.style.borderBottomColor = 'var(--todo-swipe-field-border)';
+        descriptionField.style.borderBottomColor = fieldBorder;
         descriptionField.style.borderBottomWidth = '1px';
       });
 
@@ -411,10 +483,10 @@ export class DialogManager {
         height: 56px;
         padding: 20px 36px 6px 12px;
         border: none;
-        border-bottom: 1px solid var(--todo-swipe-field-border);
+        border-bottom: 1px solid ${fieldBorder};
         border-radius: 0;
         background: transparent;
-        color: var(--todo-swipe-field-text);
+        color: ${fieldText};
         font-family: var(--mdc-typography-subtitle1-font-family, inherit);
         font-size: var(--mdc-typography-subtitle1-font-size, 1rem);
         line-height: var(--mdc-typography-subtitle1-line-height, 1.75rem);
@@ -430,7 +502,7 @@ export class DialogManager {
       const dateWrapper = document.createElement('div');
       dateWrapper.style.cssText = `
         position: relative;
-        background: var(--todo-swipe-field-background);
+        background: ${fieldBackground};
         border-radius: 4px 4px 0 0;
         min-height: 56px;
         display: flex;
@@ -445,7 +517,7 @@ export class DialogManager {
         left: 12px;
         top: 8px;
         font-size: 12px;
-        color: var(--todo-swipe-field-label);
+        color: ${fieldLabel};
         pointer-events: none;
         transition: all 0.2s ease;
       `;
@@ -461,7 +533,7 @@ export class DialogManager {
         transform: translateY(-50%);
         background: none;
         border: none;
-        color: var(--todo-swipe-field-label);
+        color: ${fieldLabel};
         font-size: 18px;
         cursor: pointer;
         padding: 4px;
@@ -503,7 +575,7 @@ export class DialogManager {
         const timeWrapper = document.createElement('div');
         timeWrapper.style.cssText = `
           position: relative;
-          background: var(--todo-swipe-field-background);
+          background: ${fieldBackground};
           border-radius: 4px 4px 0 0;
           min-height: 56px;
           display: flex;
@@ -518,10 +590,10 @@ export class DialogManager {
           height: 56px;
           padding: 20px 12px 6px 12px;
           border: none;
-          border-bottom: 1px solid var(--todo-swipe-field-border);
+          border-bottom: 1px solid ${fieldBorder};
           border-radius: 0;
           background: transparent;
-          color: var(--todo-swipe-field-text);
+          color: ${fieldText};
           font-family: var(--mdc-typography-subtitle1-font-family, inherit);
           font-size: var(--mdc-typography-subtitle1-font-size, 1rem);
           line-height: var(--mdc-typography-subtitle1-line-height, 1.75rem);
@@ -540,7 +612,7 @@ export class DialogManager {
           left: 12px;
           top: 8px;
           font-size: 12px;
-          color: var(--todo-swipe-field-label);
+          color: ${fieldLabel};
           pointer-events: none;
           transition: all 0.2s ease;
         `;

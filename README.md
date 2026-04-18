@@ -281,6 +281,52 @@ card_mod:
 --todo-swipe-card-placeholder-opacity:                  /* Opacity of 'Add item' text (default: 1) */
 ```
 
+#### Edit Dialog Field Styling
+```yaml
+--todo-swipe-dialog-surface:                            /* Background surface for the add/edit dialog */
+--todo-swipe-field-background:                          /* Background for dialog form fields */
+--todo-swipe-field-background-hover:                    /* Hover background for dialog form fields */
+--todo-swipe-field-background-disabled:                 /* Disabled background for dialog form fields */
+--todo-swipe-field-text:                                /* Text color for dialog form fields */
+--todo-swipe-field-label:                               /* Label and helper text color for dialog form fields */
+--todo-swipe-field-border:                              /* Idle border/underline color for dialog form fields */
+--todo-swipe-field-accent:                              /* Focus and active underline color for dialog form fields */
+```
+
+The edit dialog uses the card variables above as its public customization API. If a variable is not set, Todo Swipe Card falls back to Home Assistant theme variables first, then older HA/MDC variables, then a built-in fallback value.
+
+Because Home Assistant dialogs are attached outside the card, Todo Swipe Card copies any configured `--todo-swipe-*` dialog variables from the card into the dialog when it opens.
+
+Fallback order:
+
+```text
+--todo-swipe-* override
+-> Home Assistant semantic theme variable
+-> legacy HA/MDC variable
+-> built-in fallback
+```
+
+For Home Assistant 2026.4 and newer, the dialog prefers semantic form variables such as `--ha-color-form-background`, `--ha-color-form-background-hover`, `--ha-color-form-background-disabled`, `--ha-color-text-primary`, and `--ha-color-text-secondary`. Older `--input-*` and `--mdc-*` variables are still bridged for compatibility with older controls.
+
+Example:
+
+```yaml
+type: custom:todo-swipe-card
+entities:
+  - todo.shopping_list
+card_mod:
+  style: |
+    :host {
+      --todo-swipe-dialog-surface: var(--card-background-color);
+      --todo-swipe-field-background: rgba(30, 30, 30, 0.75);
+      --todo-swipe-field-background-hover: rgba(45, 45, 45, 0.85);
+      --todo-swipe-field-text: white;
+      --todo-swipe-field-label: rgba(255, 255, 255, 0.7);
+      --todo-swipe-field-border: rgba(255, 255, 255, 0.25);
+      --todo-swipe-field-accent: var(--accent-color);
+    }
+```
+
 #### Search Counter Styling
 ```yaml
 --todo-swipe-card-search-counter-font-size:             /* Font size for search results counter (default: 12px) */
