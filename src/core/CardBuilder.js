@@ -217,8 +217,16 @@ export class CardBuilder {
 
     // Apply background image if configured
     if (typeof entityConfig === 'object' && entityConfig.background_image) {
+      const backgroundPositions = {
+        left: 'left center',
+        center: 'center center',
+        right: 'right center'
+      };
+      const backgroundPosition =
+        backgroundPositions[entityConfig.background_position] || backgroundPositions.center;
+
       cardElement.style.backgroundImage = `url('${entityConfig.background_image}')`;
-      cardElement.style.backgroundPosition = 'center center';
+      cardElement.style.backgroundPosition = backgroundPosition;
       cardElement.style.backgroundRepeat = 'no-repeat';
       cardElement.style.backgroundSize = 'cover';
     }
