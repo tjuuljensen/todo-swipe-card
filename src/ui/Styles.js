@@ -316,6 +316,7 @@ export function createBaseStyles(config) {
       -webkit-backdrop-filter: var(--todo-swipe-card-backdrop-filter, none);
       color: var(--todo-swipe-card-text-color, var(--primary-text-color));
       font-size: var(--todo-swipe-card-font-size, var(--todo-swipe-card-typography-size, 11px));
+      padding-bottom: var(--todo-swipe-card-padding-bottom, 0);
       position: relative;
       
       /* Hide scrollbar for all browsers */

@@ -21,6 +21,7 @@ Todo Swipe Card is a customizable container card for Home Assistant specifically
 - Options to show/hide completed items
 - Delete completed items button with optional confirmation dialog
 - Drag-and-drop reordering (for supported integrations)
+- Configurable initial slide, including opening at the first non-empty todo list
 - Visual editor support
 
 ## Requirements
@@ -91,6 +92,7 @@ This card can be configured using the visual editor or YAML.
 | `clear_search_on_uncheck` | boolean | `false` | Clear search filter when unchecking a completed item |
 | `delete_confirmation` | boolean | `false` | Show confirmation dialog when deleting completed items |
 | `card_spacing` | number | `15` | Space between cards in pixels |
+| `initial_slide` | number/string | `0` | Initial slide to open. Use a zero-based slide index or `first_non_empty` |
 
 
 ### Entity Configuration Options
@@ -116,6 +118,16 @@ entities:
 show_pagination: true
 show_completed: true
 card_spacing: 15
+```
+
+#### Open at the first non-empty list
+```yaml
+type: custom:todo-swipe-card
+initial_slide: first_non_empty
+entities:
+  - entity: todo.shopping_list_ah
+  - entity: todo.shopping_list_jumbo
+  - entity: todo.shopping_list_coop
 ```
 
 #### Advanced Configuration 
@@ -202,6 +214,20 @@ card_mod:
     }
 ```
 
+You can add extra bottom spacing without targeting internal card classes:
+
+```yaml
+type: custom:todo-swipe-card
+entities:
+  - todo.shopping_list
+card_mod:
+  style: |
+    :host {
+      --todo-swipe-card-padding-bottom: 36px;
+      --todo-swipe-card-font-size: var(--ha-font-size-s, 12px);
+    }
+```
+
 ### Complete CSS Variables Reference
 
 #### Core Appearance
@@ -222,6 +248,7 @@ card_mod:
 --todo-swipe-card-item-spacing:                         /* Consistent margin between todo items (default: 1px) */
 --todo-swipe-card-summary-margin-top:                   /* Space above the main todo item text (default: 3px) */
 --todo-swipe-card-checkbox-margin-top:                  /* Top margin for checkboxes for fine positioning (default: 1px) */
+--todo-swipe-card-padding-bottom:                       /* Extra bottom spacing inside the card (default: 0) */
 ```
 
 #### Due Date Styling
@@ -279,6 +306,52 @@ card_mod:
 --todo-swipe-card-placeholder-font-weight:              /* Font weight for the placeholder text in the 'Add item' field */
 --todo-swipe-card-placeholder-color:                    /* Color of 'Add item' text in input fields */
 --todo-swipe-card-placeholder-opacity:                  /* Opacity of 'Add item' text (default: 1) */
+```
+
+#### Edit Dialog Field Styling
+```yaml
+--todo-swipe-dialog-surface:                            /* Background surface for the add/edit dialog */
+--todo-swipe-field-background:                          /* Background for dialog form fields */
+--todo-swipe-field-background-hover:                    /* Hover background for dialog form fields */
+--todo-swipe-field-background-disabled:                 /* Disabled background for dialog form fields */
+--todo-swipe-field-text:                                /* Text color for dialog form fields */
+--todo-swipe-field-label:                               /* Label and helper text color for dialog form fields */
+--todo-swipe-field-border:                              /* Idle border/underline color for dialog form fields */
+--todo-swipe-field-accent:                              /* Focus and active underline color for dialog form fields */
+```
+
+The edit dialog uses the card variables above as its public customization API. If a variable is not set, Todo Swipe Card falls back to Home Assistant theme variables first, then older HA/MDC variables, then a built-in fallback value.
+
+Because Home Assistant dialogs are attached outside the card, Todo Swipe Card copies any configured `--todo-swipe-*` dialog variables from the card into the dialog when it opens.
+
+Fallback order:
+
+```text
+--todo-swipe-* override
+-> Home Assistant semantic theme variable
+-> legacy HA/MDC variable
+-> built-in fallback
+```
+
+For Home Assistant 2026.4 and newer, the dialog prefers semantic form variables such as `--ha-color-form-background`, `--ha-color-form-background-hover`, `--ha-color-form-background-disabled`, `--ha-color-text-primary`, and `--ha-color-text-secondary`. Older `--input-*` and `--mdc-*` variables are still bridged for compatibility with older controls.
+
+Example:
+
+```yaml
+type: custom:todo-swipe-card
+entities:
+  - todo.shopping_list
+card_mod:
+  style: |
+    :host {
+      --todo-swipe-dialog-surface: var(--card-background-color);
+      --todo-swipe-field-background: rgba(30, 30, 30, 0.75);
+      --todo-swipe-field-background-hover: rgba(45, 45, 45, 0.85);
+      --todo-swipe-field-text: white;
+      --todo-swipe-field-label: rgba(255, 255, 255, 0.7);
+      --todo-swipe-field-border: rgba(255, 255, 255, 0.25);
+      --todo-swipe-field-accent: var(--accent-color);
+    }
 ```
 
 #### Search Counter Styling
