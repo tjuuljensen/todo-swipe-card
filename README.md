@@ -202,6 +202,20 @@ card_mod:
     }
 ```
 
+You can add extra bottom spacing without targeting internal card classes:
+
+```yaml
+type: custom:todo-swipe-card
+entities:
+  - todo.shopping_list
+card_mod:
+  style: |
+    :host {
+      --todo-swipe-card-padding-bottom: 36px;
+      --todo-swipe-card-font-size: var(--ha-font-size-s, 12px);
+    }
+```
+
 ### Complete CSS Variables Reference
 
 #### Core Appearance
@@ -222,6 +236,7 @@ card_mod:
 --todo-swipe-card-item-spacing:                         /* Consistent margin between todo items (default: 1px) */
 --todo-swipe-card-summary-margin-top:                   /* Space above the main todo item text (default: 3px) */
 --todo-swipe-card-checkbox-margin-top:                  /* Top margin for checkboxes for fine positioning (default: 1px) */
+--todo-swipe-card-padding-bottom:                       /* Extra bottom spacing inside the card (default: 0) */
 ```
 
 #### Due Date Styling
