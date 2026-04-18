@@ -10,25 +10,29 @@
     "deploy": "NODE_ENV=development npx rollup -c && npm run deploy:copy",
     "deploy:prod": "NODE_ENV=production MINIFY=false npx rollup -c && npm run deploy:copy",
     "deploy:minified": "NODE_ENV=production MINIFY=true npx rollup -c && npm run deploy:copy",
+
     "// === BUILD COMMANDS (with maps) ===": "",
-    "build": "NODE_ENV=development SOURCEMAP=true npx rollup -c",
-    "build:prod": "NODE_ENV=production MINIFY=false SOURCEMAP=true npx rollup -c",
-    "build:minified": "NODE_ENV=production MINIFY=true SOURCEMAP=true npx rollup -c",
+    "build": "NODE_ENV=development SOURCEMAP=true npx rollup -c && npm run sync:dist",
+    "build:prod": "NODE_ENV=production MINIFY=false SOURCEMAP=true npx rollup -c && npm run sync:dist",
+    "build:minified": "NODE_ENV=production MINIFY=true SOURCEMAP=true npx rollup -c && npm run sync:dist",
+    "sync:dist": "node --input-type=module -e \"import { mkdirSync, copyFileSync, existsSync } from 'node:fs'; mkdirSync('dist', { recursive: true }); copyFileSync('build/todo-swipe-card.js', 'dist/todo-swipe-card.js'); if (existsSync('build/todo-swipe-card.js.map')) copyFileSync('build/todo-swipe-card.js.map', 'dist/todo-swipe-card.js.map');\"",
+
     "// === DEPLOY HELPER ===": "",
     "deploy:copy": "rsync -rlvh --delete ./build/ /workspace/homeassistant/www/todo-swipe-card/",
+
     "// === EXISTING COMMANDS ===": "",
     "lint": "npx eslint src/**/*.js",
     "lint:fix": "npx eslint src/**/*.js --fix",
     "format": "prettier --write 'src/**/*.js'",
     "format:check": "prettier --check 'src/**/*.js'",
     "version-check": "node -e \"const pkg=require('./package.json'); const fs=require('fs'); const constantsPath='src/utils/Constants.js'; const constants=fs.readFileSync(constantsPath,'utf8'); const versionMatch=constants.match(/export const VERSION = '([^']+)'/); if(!versionMatch || pkg.version !== versionMatch[1]) { console.error('❌ Version mismatch! package.json:',pkg.version,'Constants.js:',versionMatch?versionMatch[1]:'not found'); process.exit(1); } else { console.log('✅ Versions match:',pkg.version); }\"",
-    "size-check": "npm run deploy:minified --silent && echo '📦 Final build size:' && ls -lh build/todo-swipe-card.js",
+    "size-check": "npm run deploy:minified --silent && echo ' Final build size:' && ls -lh build/todo-swipe-card.js",
     "validate": "npm run version-check && npm run size-check",
     "pre-release": "npm run format && npm run lint && npm run deploy:prod && npm run validate",
-    "release": "npm run clean && npm run pre-release && npm run deploy:minified && echo '🎉 Release ready! File: build/todo-swipe-card.js'",
+    "release": "npm run clean && npm run pre-release && npm run deploy:minified && echo ' Release ready! File: build/todo-swipe-card.js'",
     "release:auto": "node scripts/release.js",
-    "clean": "rimraf build/*.js *.map",
-    "test:build": "npm run deploy:prod && echo '✅ Production build test passed'"
+    "clean": "rimraf build/*.js build/*.map dist/*.js dist/*.map",
+    "test:build": "npm run deploy:prod && echo 'Production build test passed'"
   },
   "dependencies": {
     "lit": "^3.0.0"
