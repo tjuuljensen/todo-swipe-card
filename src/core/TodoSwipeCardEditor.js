@@ -634,6 +634,34 @@ export class TodoSwipeCardEditor extends LitElement {
     this._debounceDispatch(newConfig);
   }
 
+  _entityBackgroundPositionChanged(ev) {
+    const index = parseInt(ev.target.getAttribute('data-index'));
+    if (isNaN(index)) return;
+
+    const newValue = ev.target.value || 'center';
+    const entities = [...this._config.entities];
+    const currentEntity = entities[index];
+
+    if (typeof currentEntity === 'string') {
+      entities[index] =
+        newValue === 'center'
+          ? currentEntity
+          : { entity: currentEntity, background_position: newValue };
+    } else {
+      const updatedEntity = { ...currentEntity };
+      if (newValue === 'center') {
+        delete updatedEntity.background_position;
+      } else {
+        updatedEntity.background_position = newValue;
+      }
+      entities[index] = updatedEntity;
+    }
+
+    const newConfig = { ...this._config, entities };
+    this._config = newConfig;
+    this._debounceDispatch(newConfig);
+  }
+
   _entityTitleEnabledChanged(ev) {
     const index = parseInt(ev.target.getAttribute('data-index'));
     if (isNaN(index)) return;
@@ -785,6 +813,7 @@ export class TodoSwipeCardEditor extends LitElement {
         show_title: false,
         title: '',
         background_image: '',
+        background_position: 'center',
         hide_future_items: false,
         max_items: undefined
       };
@@ -795,6 +824,7 @@ export class TodoSwipeCardEditor extends LitElement {
       show_title: entity?.show_title || false,
       title: entity?.title || '',
       background_image: entity?.background_image || '',
+      background_position: entity?.background_position || 'center',
       icon: entity?.icon || '',
       hide_future_items: entity?.hide_future_items || false,
       max_items: entity?.max_items || undefined
@@ -808,6 +838,14 @@ export class TodoSwipeCardEditor extends LitElement {
       { value: TodoSortMode.ALPHA_DESC, label: 'Alphabetical Z-A' },
       { value: TodoSortMode.DUEDATE_ASC, label: 'Due Date (Earliest First)' },
       { value: TodoSortMode.DUEDATE_DESC, label: 'Due Date (Latest First)' }
+    ];
+  }
+
+  _getBackgroundPositionOptions() {
+    return [
+      { value: 'left', label: 'Left' },
+      { value: 'center', label: 'Center' },
+      { value: 'right', label: 'Right' }
     ];
   }
 
@@ -999,6 +1037,26 @@ export class TodoSwipeCardEditor extends LitElement {
                                     placeholder="Optional: e.g. /local/images/background.jpg"
                                   ></ha-textfield>
 
+                                  ${entityConfig.background_image
+                                    ? html`
+                                        <ha-select
+                                          .label=${'Background Position'}
+                                          .value=${entityConfig.background_position}
+                                          data-index=${index}
+                                          @selected=${this._entityBackgroundPositionChanged}
+                                          @closed=${this._stopPropagation}
+                                          style="margin-top: 8px; margin-bottom: 4px;"
+                                        >
+                                          ${this._getBackgroundPositionOptions().map(
+                                            (option) => html`
+                                              <mwc-list-item .value=${option.value}>
+                                                ${option.label}
+                                              </mwc-list-item>
+                                            `
+                                          )}
+                                        </ha-select>
+                                      `
+                                    : ''}
                                   ${this._show_icons
                                     ? html`
                                         <ha-textfield

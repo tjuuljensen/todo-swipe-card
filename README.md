@@ -100,6 +100,7 @@ This card can be configured using the visual editor or YAML.
 | `show_title` | boolean | `false` | Show custom title above todo list |
 | `title` | string | Optional | Custom title text (Only used if show_title is true) |
 | `background_image` | string | Optional | Background image URL for this entity |
+| `background_position` | string | `center` | Horizontal background image position: `left`, `center`, or `right` |
 | `display_order` | string | none | Sort order: `none`, `alpha_asc`, `alpha_desc`, `duedate_asc`, `duedate_desc` |
 | `icon` | string | Optional | Custom icon for this todo list (e.g., `mdi:cart-variant`) |
 
@@ -125,12 +126,14 @@ type: custom:todo-swipe-card
 entities:
   - entity: todo.shopping_list
     background_image: /local/images/shopping_bg.jpg
+    background_position: left
     show_title: true
     title: "Shopping List"
     display_order: alpha_asc
     icon: mdi:cart-variant
   - entity: todo.home_tasks
     background_image: /local/images/home_bg.jpg
+    background_position: center
     show_title: true
     title: "Home Tasks"
     display_order: duedate_asc
