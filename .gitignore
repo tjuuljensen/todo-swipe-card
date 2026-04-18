@@ -1,39 +1,62 @@
 # Dependencies
 node_modules/
 
-# IDE files
+# Build output
+# Keep the release bundle tracked, but ignore generated side files.
+build/*
+!build/
+!build/todo-swipe-card.js
+*.map
+
+# Tool caches
+.eslintcache
+.prettiercache
+.rollup.cache/
+.cache/
+.npm/
+.pnpm-store/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime/temp files
+pids/
+*.pid
+*.seed
+*.pid.lock
+tmp/
+temp/
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Environment/local config
+.env
+.env.*
+!.env.example
+
+# Editor/IDE
 .vscode/
 .idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
-# OS files
+# OS/filesystem
 .DS_Store
 Thumbs.db
 @eaDir/
 
-# Logs
-*.log
-npm-debug.log*
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage directory
-coverage/
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Personal development files
+# Personal notes/release scratch files
 tree.txt
 todo.md
 RELEASE-GUIDE.md
 RELEASE-NOTES.md
-
-*.map
