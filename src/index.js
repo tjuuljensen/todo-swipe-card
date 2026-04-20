@@ -2,10 +2,12 @@ import { VERSION } from './utils/Constants.js';
 import { debugLog } from './utils/Debug.js';
 import { TodoSwipeCard } from './core/TodoSwipeCard.js';
 import { TodoSwipeCardEditor } from './core/TodoSwipeCardEditor.js';
+import { initTodoSwipeBridge } from './features/BridgeEvents.js';
 
 // Define custom elements
 customElements.define('todo-swipe-card', TodoSwipeCard);
 customElements.define('todo-swipe-card-editor', TodoSwipeCardEditor);
+initTodoSwipeBridge();
 
 // Add card to UI picker
 if (!window.customCards) {
@@ -13,7 +15,7 @@ if (!window.customCards) {
 }
 
 // Ensure registration happens only once
-let registered = window.customCards.some((card) => card.type === 'todo-swipe-card');
+const registered = window.customCards.some((card) => card.type === 'todo-swipe-card');
 if (!registered) {
   window.customCards.push({
     type: 'todo-swipe-card',
