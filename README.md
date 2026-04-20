@@ -23,6 +23,7 @@ Todo Swipe Card is a customizable container card for Home Assistant specifically
 - Drag-and-drop reordering (for supported integrations)
 - Configurable initial slide, including opening at the first non-empty todo list
 - Visual editor support
+- External navigation via `fire-dom-event` bridge (`todo-swipe-card-go`)
 
 ## Requirements
 - Home Assistant 2023.4 or later
@@ -176,6 +177,36 @@ The Todo Swipe Card supports drag-and-drop reordering of todo items for integrat
 4. Release to complete the move
 
 **Note**: The Shopping List integration and some third-party integrations may not support drag-and-drop reordering. In these cases, items will display without drag-and-drop functionality.
+
+## External Navigation (Bridge Event)
+
+Todo Swipe Card includes built-in bridge support so other cards (for example `custom:button-card`) can switch slides.
+
+Use this event:
+- `event`: `todo-swipe-card-go`
+- `event_data.index`: zero-based slide index
+
+Optional targeting:
+- `card_index`: zero-based visible card position on the dashboard (top-to-bottom, then left-to-right)
+- `scope_entity`: target by matching one configured entity ID on the card
+- `selector`: target via explicit CSS selector
+
+Example `button-card` action:
+
+```yaml
+tap_action:
+  action: fire-dom-event
+  event: todo-swipe-card-go
+  event_data:
+    index: 1
+    card_index: 0
+```
+
+Manual browser console test:
+
+```js
+window.todoSwipeBridge.goTo(1, { card_index: 0 });
+```
 
 ## Customizing and Theming
 The Todo Swipe Card provides extensive customization capabilities through two primary methods: Home Assistant themes and card-mod styling. The card supports over fourty CSS variables that control every aspect of its appearance, from basic colors and typography to sophisticated pagination styling and transition effects.
