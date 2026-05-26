@@ -2655,6 +2655,29 @@ class DialogManager {
   }
 
   /**
+   * Create a built-in-style destructive text action button.
+   * @param {string} text - Button text
+   * @param {string} slot - Button slot
+   * @returns {HTMLElement} Delete action button
+   * @private
+   */
+  _createDeleteActionButton(text) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = text;
+    button.style.cssText = `
+      border: 0;
+      background: transparent;
+      color: var(--error-color, #f44336);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 8px 0;
+    `;
+    return button;
+  }
+
+  /**
    * Create a regular button that matches ha-button styling.
    * @param {string} text - Button text
    * @param {string} slot - Button slot
@@ -2727,7 +2750,7 @@ class DialogManager {
 
     // Create dialog with HA's native styling and accessibility
     const dialog = document.createElement('ha-dialog');
-    dialog.heading = item ? 'Edit item' : 'Add Todo Item';
+    dialog.heading = '';
     dialog.open = true;
     dialog.style.setProperty('--mdc-dialog-min-width', 'min(600px, 95vw)');
     dialog.style.setProperty('--mdc-dialog-max-width', 'min(600px, 95vw)');
@@ -2876,16 +2899,20 @@ class DialogManager {
     // Create content container
     const content = document.createElement('div');
     content.style.cssText = `
-      padding: 8px 0;
+      padding: 8px 22px 0 22px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
     `;
 
     // Get entity state and features
     const entityState = this._hass?.states?.[entityId];
-    const supportsDescription = entityState && entitySupportsFeature(entityState, 64);
+    const entityName = entityState?.attributes?.friendly_name || entityId;
+    const showExtendedFields = this._config.show_extended_edit_fields === true;
+    const supportsDescription =
+      showExtendedFields && entityState && entitySupportsFeature(entityState, 64);
     const supportsDueDate =
+      showExtendedFields &&
       entityState &&
       (entitySupportsFeature(entityState, 16) || entitySupportsFeature(entityState, 32));
     const supportsDelete = entityState && entitySupportsFeature(entityState, 2);
@@ -2898,34 +2925,101 @@ class DialogManager {
       supportsDelete: supportsDelete
     });
 
+    const header = document.createElement('div');
+    header.style.cssText = `
+      margin-left: 36px;
+      margin-top: -4px;
+      min-height: 38px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    `;
+
+    const title = document.createElement('div');
+    title.textContent = item ? 'Edit item' : 'Add Todo Item';
+    title.style.cssText = `
+      color: var(--primary-text-color);
+      font-size: 20px;
+      font-weight: 500;
+      line-height: 21px;
+    `;
+
+    const subtitle = document.createElement('div');
+    subtitle.textContent = entityName;
+    subtitle.style.cssText = `
+      color: var(--secondary-text-color);
+      font-size: 14px;
+      line-height: 17px;
+      margin-top: 0;
+    `;
+
+    header.appendChild(title);
+    header.appendChild(subtitle);
+    content.appendChild(header);
+
     // Create summary/checkbox row
     const summaryRow = document.createElement('div');
-    summaryRow.style.cssText = 'display: flex; align-items: flex-start; gap: 8px;';
+    summaryRow.style.cssText = 'display: flex; align-items: flex-start; gap: 24px; margin-top: 0;';
 
     // Checkbox for completion status (only for existing items)
     let checkbox = null;
     if (item) {
       checkbox = document.createElement('ha-checkbox');
       checkbox.checked = item.status === 'completed';
-      checkbox.style.marginTop = '8px';
+      checkbox.style.marginTop = '13px';
       summaryRow.appendChild(checkbox);
     }
 
     // Summary input with validation
-    const summaryField = document.createElement('ha-textfield');
-    summaryField.label = 'Task name';
+    const summaryFieldWrapper = document.createElement('label');
+    summaryFieldWrapper.style.cssText = `
+      display: flex;
+      flex: 1;
+      min-width: 0;
+      flex-direction: column;
+      color: ${fieldLabel};
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 15px;
+      max-width: calc(100% - 48px);
+    `;
+
+    const summaryLabel = document.createElement('span');
+    summaryLabel.textContent = 'Task name*';
+    summaryLabel.style.cssText = `
+      color: ${fieldAccent};
+      margin-bottom: 1px;
+    `;
+
+    const summaryField = document.createElement('input');
+    summaryField.type = 'text';
     summaryField.value = item?.summary || '';
     summaryField.required = true;
-    summaryField.style.flexGrow = '1';
-    summaryField.dialogInitialFocus = true;
-    summaryField.validationMessage = 'Task name is required';
-    summaryRow.appendChild(summaryField);
+    summaryField.setAttribute('aria-label', 'Task name');
+    summaryField.style.cssText = `
+      width: 100%;
+      box-sizing: border-box;
+      border: 0;
+      border-bottom: 2px solid ${fieldAccent};
+      border-radius: 0;
+      background: transparent;
+      color: ${fieldText};
+      font: inherit;
+      font-size: 16px;
+      line-height: 21px;
+      padding: 0 0 6px 0;
+      outline: none;
+    `;
+
+    summaryFieldWrapper.appendChild(summaryLabel);
+    summaryFieldWrapper.appendChild(summaryField);
+    summaryRow.appendChild(summaryFieldWrapper);
 
     content.appendChild(summaryRow);
 
     // Description field
     let descriptionField = null;
-    {
+    if (supportsDescription) {
       // Create a wrapper for proper styling
       const textareaWrapper = document.createElement('div');
       textareaWrapper.style.cssText = `
@@ -3213,33 +3307,54 @@ class DialogManager {
     // Set up focus trap after dialog is added to DOM
     setTimeout(setupFocusTrap, 100);
 
-    dialog.appendChild(content);
+    const footer = document.createElement('div');
+    footer.style.cssText = `
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 16px;
+      padding-top: 26px;
+    `;
 
     // Delete button (if item exists and supports delete)
-    if (item && supportsDelete) {
-      const deleteButton = this._createCustomDeleteButton('Delete item', 'secondaryAction');
+    if (item && supportsDelete && this._config.show_item_delete !== false) {
+      const deleteButton = this._createDeleteActionButton('Delete item');
 
       deleteButton.addEventListener('click', async () => {
-        const confirmed = await this.showDeleteConfirmationDialog(item.summary);
+        const confirmed =
+          this._config.item_delete_confirmation === true
+            ? await this.showDeleteConfirmationDialog(item.summary)
+            : true;
         if (confirmed) {
           deleteTodoItemFromDialog(entityId, item, this._hass);
           this.closeDialog(dialog);
         }
       });
 
-      dialog.appendChild(deleteButton);
+      footer.appendChild(deleteButton);
     }
 
-    // Cancel button
-    const cancelButton = this._createRegularButton('Cancel', 'primaryAction');
-    cancelButton.addEventListener('click', () => {
-      this.closeDialog(dialog);
-    });
-    dialog.appendChild(cancelButton);
+    const actionSpacer = document.createElement('div');
+    actionSpacer.style.flex = '1';
+    footer.insertBefore(actionSpacer, footer.firstChild);
 
     // Save button
     const saveText = item ? 'Save item' : 'Add';
-    const saveButton = this._createRegularButton(saveText, 'primaryAction');
+    const saveButton = document.createElement('button');
+    saveButton.type = 'button';
+    saveButton.textContent = saveText;
+    saveButton.style.cssText = `
+      min-width: 96px;
+      min-height: 42px;
+      border: 0;
+      border-radius: 21px;
+      padding: 0 20px;
+      background: var(--accent-color, var(--primary-color));
+      color: var(--text-primary-color, #fff);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    `;
     saveButton.addEventListener('click', async () => {
       const summary = summaryField.value.trim();
       if (!summary) {
@@ -3288,7 +3403,9 @@ class DialogManager {
         this.closeDialog(dialog);
       }
     });
-    dialog.appendChild(saveButton);
+    footer.appendChild(saveButton);
+    content.appendChild(footer);
+    dialog.appendChild(content);
 
     // Keyboard handlers
     summaryField.addEventListener('keydown', (e) => {
@@ -3422,36 +3539,81 @@ class DialogManager {
   async showDeleteConfirmationDialog(itemSummary) {
     return new Promise((resolve) => {
       const confirmDialog = document.createElement('ha-dialog');
-      confirmDialog.heading = 'Confirm Deletion';
+      confirmDialog.heading = '';
       confirmDialog.open = true;
+      let resolved = false;
+      const finish = (value) => {
+        if (resolved) return;
+        resolved = true;
+        resolve(value);
+        this.closeDialog(confirmDialog);
+      };
 
       const content = document.createElement('div');
-      content.style.padding = '16px';
-      content.textContent = `Are you sure you want to delete "${itemSummary}"?`;
-      confirmDialog.appendChild(content);
+      content.style.cssText = `
+        padding: 16px 24px 8px 24px;
+        color: var(--primary-text-color);
+      `;
+
+      const message = document.createElement('div');
+      message.textContent = `Are you sure you want to delete "${itemSummary}"?`;
+      message.style.cssText = `
+        font-size: 16px;
+        line-height: 24px;
+      `;
+      content.appendChild(message);
+
+      const footer = document.createElement('div');
+      footer.style.cssText = `
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 16px;
+        padding-top: 24px;
+      `;
 
       // Cancel button first (secondary action)
-      const cancelButton = this._createRegularButton('Cancel', 'secondaryAction');
+      const cancelButton = document.createElement('button');
+      cancelButton.type = 'button';
+      cancelButton.textContent = 'Cancel';
+      cancelButton.style.cssText = `
+        border: 0;
+        background: transparent;
+        color: var(--primary-color);
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        padding: 8px 0;
+      `;
       cancelButton.addEventListener('click', () => {
-        confirmDialog.close();
-        resolve(false);
+        finish(false);
       });
 
       // Delete button with red styling
-      const confirmButton = this._createCustomDeleteButton('Delete', 'primaryAction');
+      const confirmButton = this._createDeleteActionButton('Delete');
       confirmButton.addEventListener('click', () => {
-        confirmDialog.close();
-        resolve(true);
+        finish(true);
       });
 
-      confirmDialog.appendChild(cancelButton);
-      confirmDialog.appendChild(confirmButton);
+      [cancelButton, confirmButton].forEach((button) => {
+        button.addEventListener('pointerdown', (e) => e.stopPropagation());
+        button.addEventListener('mousedown', (e) => e.stopPropagation());
+        button.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+      });
+
+      footer.appendChild(cancelButton);
+      footer.appendChild(confirmButton);
+      content.appendChild(footer);
+      confirmDialog.appendChild(content);
 
       confirmDialog.addEventListener('closed', () => {
         if (confirmDialog.parentNode) {
           confirmDialog.parentNode.removeChild(confirmDialog);
         }
-        resolve(false);
+        if (!resolved) {
+          resolved = true;
+          resolve(false);
+        }
       });
 
       document.body.appendChild(confirmDialog);
@@ -3465,34 +3627,100 @@ class DialogManager {
   showDeleteCompletedConfirmation(entityId) {
     // Create confirmation dialog
     const dialog = document.createElement('ha-dialog');
-    dialog.heading = 'Confirm Deletion';
+    dialog.heading = '';
     dialog.open = true;
+    let closed = false;
+    const closeDialog = () => {
+      if (closed) return;
+      closed = true;
+      this.closeDialog(dialog);
+    };
 
     // Create content container
     const content = document.createElement('div');
-    content.style.padding = '16px';
-    content.textContent = 'Are you sure you want to delete all completed items from the list?';
-    dialog.appendChild(content);
+    content.style.cssText = `
+      padding: 16px 24px 8px 24px;
+      color: var(--primary-text-color);
+    `;
+
+    const title = document.createElement('div');
+    title.textContent = 'Remove completed items?';
+    title.style.cssText = `
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 28px;
+      margin-bottom: 18px;
+    `;
+
+    const message = document.createElement('div');
+    message.textContent =
+      'Completed items will be permanently removed from the to-do list.';
+    message.style.cssText = `
+      font-size: 16px;
+      line-height: 24px;
+    `;
+
+    const footer = document.createElement('div');
+    footer.style.cssText = `
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 16px;
+      padding-top: 32px;
+    `;
+
+    content.appendChild(title);
+    content.appendChild(message);
 
     // Create cancel button first (secondary action)
-    const cancelButton = this._createRegularButton('Cancel', 'secondaryAction');
+    const cancelButton = document.createElement('button');
+    cancelButton.type = 'button';
+    cancelButton.textContent = 'Cancel';
+    cancelButton.style.cssText = `
+      border: 0;
+      background: transparent;
+      color: var(--primary-color);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 8px 0;
+    `;
     cancelButton.addEventListener('click', () => {
-      dialog.close();
+      closeDialog();
     });
 
     // Create confirm button with red styling
-    const confirmButton = this._createCustomDeleteButton('Delete', 'primaryAction');
+    const confirmButton = document.createElement('button');
+    confirmButton.type = 'button';
+    confirmButton.textContent = 'Delete';
+    confirmButton.style.cssText = `
+      min-width: 76px;
+      min-height: 42px;
+      border: 0;
+      border-radius: 21px;
+      padding: 0 20px;
+      background: var(--error-color, #db005b);
+      color: var(--text-primary-color, #fff);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    `;
     confirmButton.addEventListener('click', () => {
-      dialog.close();
-      // Import deleteCompletedItems here to avoid circular dependency
-      Promise.resolve().then(function () { return TodoOperations; }).then((module) => {
-        module.deleteCompletedItems(entityId, this._hass);
-      });
+      deleteCompletedItems(entityId, this._hass);
+      closeDialog();
+    });
+
+    [cancelButton, confirmButton].forEach((button) => {
+      button.addEventListener('pointerdown', (e) => e.stopPropagation());
+      button.addEventListener('mousedown', (e) => e.stopPropagation());
+      button.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
     });
 
     // Append buttons to dialog
-    dialog.appendChild(cancelButton);
-    dialog.appendChild(confirmButton);
+    footer.appendChild(cancelButton);
+    footer.appendChild(confirmButton);
+    content.appendChild(footer);
+    dialog.appendChild(content);
 
     // Handle dialog close
     dialog.addEventListener('closed', () => {
@@ -4433,7 +4661,10 @@ class TodoSwipeCard extends i {
       show_addbutton: false,
       show_completed: false,
       show_completed_menu: false,
-      delete_confirmation: false,
+      delete_confirmation: true,
+      show_item_delete: true,
+      show_extended_edit_fields: false,
+      item_delete_confirmation: false,
       enable_search: false,
       clear_search_on_uncheck: false
     };
@@ -5542,6 +5773,9 @@ class TodoSwipeCardEditor extends i {
       show_completed: config.show_completed,
       show_completed_menu: config.show_completed_menu,
       delete_confirmation: config.delete_confirmation,
+      show_item_delete: config.show_item_delete,
+      show_extended_edit_fields: config.show_extended_edit_fields,
+      item_delete_confirmation: config.item_delete_confirmation,
       enable_search: config.enable_search,
       clear_search_on_uncheck: config.clear_search_on_uncheck
     };
@@ -5557,6 +5791,9 @@ class TodoSwipeCardEditor extends i {
       'show_completed',
       'show_completed_menu',
       'delete_confirmation',
+      'show_item_delete',
+      'show_extended_edit_fields',
+      'item_delete_confirmation',
       'enable_search',
       'clear_search_on_uncheck',
       'custom_card_mod'
@@ -5677,7 +5914,10 @@ class TodoSwipeCardEditor extends i {
       show_addbutton: false,
       show_completed: false,
       show_completed_menu: false,
-      delete_confirmation: false,
+      delete_confirmation: true,
+      show_item_delete: true,
+      show_extended_edit_fields: false,
+      item_delete_confirmation: false,
       enable_search: false,
       clear_search_on_uncheck: false
     };
