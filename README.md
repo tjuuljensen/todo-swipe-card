@@ -91,7 +91,10 @@ This card can be configured using the visual editor or YAML.
 | `show_completed_menu` | boolean | `false` | Show/hide delete completed items button |
 | `enable_search` | boolean | `false` | Enable or disable search functionality |
 | `clear_search_on_uncheck` | boolean | `false` | Clear search filter when unchecking a completed item |
-| `delete_confirmation` | boolean | `false` | Show confirmation dialog when deleting completed items |
+| `delete_confirmation` | boolean | `true` | Show confirmation dialog when deleting completed items |
+| `show_item_delete` | boolean | `true` | Show the `Delete item` action in the item edit dialog |
+| `show_extended_edit_fields` | boolean | `false` | Show description and due date fields in the item edit dialog when the todo integration supports them |
+| `item_delete_confirmation` | boolean | `false` | Show confirmation dialog before deleting a single item from the item edit dialog |
 | `card_spacing` | number | `15` | Space between cards in pixels |
 | `initial_slide` | number/string | `0` | Initial slide to open. Use a zero-based slide index or `first_non_empty` |
 
@@ -163,6 +166,9 @@ show_completed_menu: true
 enable_search: true
 clear_search_on_uncheck: true
 delete_confirmation: true
+show_item_delete: true
+show_extended_edit_fields: false
+item_delete_confirmation: false
 card_spacing: 10
 ```
 
