@@ -87,7 +87,10 @@ export class TodoSwipeCard extends LitElement {
       show_addbutton: false,
       show_completed: false,
       show_completed_menu: false,
-      delete_confirmation: false,
+      delete_confirmation: true,
+      show_item_delete: true,
+      show_extended_edit_fields: false,
+      item_delete_confirmation: false,
       enable_search: false,
       clear_search_on_uncheck: false
     };

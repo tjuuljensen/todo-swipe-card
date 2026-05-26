@@ -122,6 +122,9 @@ export class TodoSwipeCardEditor extends LitElement {
       show_completed: config.show_completed,
       show_completed_menu: config.show_completed_menu,
       delete_confirmation: config.delete_confirmation,
+      show_item_delete: config.show_item_delete,
+      show_extended_edit_fields: config.show_extended_edit_fields,
+      item_delete_confirmation: config.item_delete_confirmation,
       enable_search: config.enable_search,
       clear_search_on_uncheck: config.clear_search_on_uncheck
     };
@@ -137,6 +140,9 @@ export class TodoSwipeCardEditor extends LitElement {
       'show_completed',
       'show_completed_menu',
       'delete_confirmation',
+      'show_item_delete',
+      'show_extended_edit_fields',
+      'item_delete_confirmation',
       'enable_search',
       'clear_search_on_uncheck',
       'custom_card_mod'
@@ -257,7 +263,10 @@ export class TodoSwipeCardEditor extends LitElement {
       show_addbutton: false,
       show_completed: false,
       show_completed_menu: false,
-      delete_confirmation: false,
+      delete_confirmation: true,
+      show_item_delete: true,
+      show_extended_edit_fields: false,
+      item_delete_confirmation: false,
       enable_search: false,
       clear_search_on_uncheck: false
     };
